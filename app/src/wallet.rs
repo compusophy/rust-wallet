@@ -20,7 +20,7 @@ pub fn WalletView() -> impl IntoView {
     let (status, set_status) = create_signal("Ready".to_string());
     
     // Latency Tracking
-    let (last_latency, set_last_latency) = create_signal(None::<f64>);
+    let (_last_latency, set_last_latency) = create_signal(None::<f64>);
     
     // Balances
     let (bal_sepolia, set_bal_sepolia) = create_signal("...".to_string());
@@ -278,8 +278,8 @@ pub fn WalletView() -> impl IntoView {
     // Send ETH (Device)
     let send_eth_device = move |_| {
         spawn_local(async move {
-            let to = device_recipient.get();
-            let amt_str = device_amount.get();
+            let to = device_recipient.get_untracked();
+            let amt_str = device_amount.get_untracked();
             
             if to.is_empty() || amt_str.is_empty() {
                 set_status.set("Invalid Send Inputs".to_string());
@@ -304,7 +304,7 @@ pub fn WalletView() -> impl IntoView {
             let feedback = crate::transactions::TxFeedback::new(set_status);
             feedback.set("Sending ETH...");
             
-            let k = keystore.get();
+            let k = keystore.get_untracked();
             let pk = k.private_key.trim_start_matches("0x");
             let wallet: LocalWallet = pk.parse().unwrap();
             let wallet = wallet.with_chain_id(84532u64);
@@ -326,8 +326,8 @@ pub fn WalletView() -> impl IntoView {
     // Send ETH (Smart Account)
     let send_eth_sa = move |_| {
         spawn_local(async move {
-            let to = sa_recipient.get();
-            let amt_str = sa_amount.get();
+            let to = sa_recipient.get_untracked();
+            let amt_str = sa_amount.get_untracked();
             
             if to.is_empty() || amt_str.is_empty() {
                  set_status.set("Invalid Send Inputs".to_string());
@@ -351,7 +351,7 @@ pub fn WalletView() -> impl IntoView {
             let feedback = crate::transactions::TxFeedback::new(set_status);
             feedback.set("Preparing UserOp (Send ETH)...");
 
-             let k = keystore.get();
+             let k = keystore.get_untracked();
              if let Some(tba_addr) = k.smart_account {
                   let tba: Address = tba_addr.parse().unwrap();
                   
@@ -714,11 +714,10 @@ pub fn WalletView() -> impl IntoView {
     };
 
     view! {
-        <div class="wallet-container" style="position:relative">
+        <div class="wallet-container">
             // Sticky Header
             <header class="app-header">
                 <div class="header-status">
-                    <span style="color:#888; font-size:10px; text-transform:uppercase; letter-spacing:1px;">"Status"</span>
                     <div style="color:#4CAF50; font-size:12px; font-weight:bold;">{move || status.get()}</div>
                 </div>
                 <div class="header-icons">
@@ -941,11 +940,7 @@ pub fn WalletView() -> impl IntoView {
                     }.into_view()
                 }}
                 
-                {move || if let Some(ms) = last_latency.get() {
-                     view! { <div class="latency-meter">{format!("Latency: {:.0}ms", ms)}</div> }.into_view()
-                } else {
-                     view! { }.into_view()
-                }}
+
             </div> // End app-content
 
             // Sticky Footer

@@ -1,3 +1,22 @@
-/target
-/dist
+# Root Gitignore
+
+# Rust
+target/
+**/*.rs.bk
+
+# Foundry
+out/
+cache/
+broadcast/
+
+# Node
+node_modules/
+dist/
+
+# Environment
 .env
+.env.local
+
+# IDE
+.vscode/
+.idea/

@@ -16,32 +16,34 @@
 }
 
 body {
-    background-color: var(--bg-color);
+    background-color: #000;
     color: var(--text-primary);
     margin: 0;
-    height: 100vh;
+    padding: 0;
+    height: 100dvh;
+    /* Dynamic viewport height */
+    width: 100vw;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #0d0e12;
-    color: #e0e0e0;
     font-family: 'Courier New', Courier, monospace;
     overflow: hidden;
-    /* Prevent body scroll, container scrolls if needed */
+    /* Prevent body scroll */
 }
 
-/* Central "Pixel Buffer" Container (9:16 Mobile Ratio) */
+/* Central "Pixel Buffer" Container */
 .wallet-container {
-    width: 400px;
-    height: 710px;
+    width: min(420px, 94vw);
+    height: min(850px, 96dvh);
     background: #12141d;
-    border: 2px solid #333;
-    /* border-radius removed */
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    margin: 10px auto;
+    border: 1px solid #333;
+
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    margin: auto;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .app-header {

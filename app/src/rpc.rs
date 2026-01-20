@@ -83,3 +83,9 @@ pub async fn get_transaction_receipt(tx_hash: &str, network: Network) -> Result<
 }
 
 
+
+pub async fn estimate_gas(tx: serde_json::Value, network: Network) -> Result<ethers_core::types::U256, String> {
+    let val = eth_call(network, "eth_estimateGas", json!([tx])).await?;
+    let hex = val["result"].as_str().unwrap_or("0x0");
+    ethers_core::types::U256::from_str_radix(hex.trim_start_matches("0x"), 16).map_err(|e| e.to_string())
+}

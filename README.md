@@ -1,35 +1,34 @@
-# Diamond Facet Wallet
+# Diamond Wallet Monorepo
 
-A mobile-first, smart-contract-powered Ethereum wallet built with Rust (Leptos) and running entirely in the browser (WASM).
+This repository contains the full stack for the Diamond Wallet embedded smart account system.
 
-## Features
-- **Device Wallet**: Local browser keystore (Signer).
-- **Smart Account**: ERC-6551 Token Bound Account (TBA) derived from an Identity NFT.
-- **Diamond Facets**: Modular wallet architecture.
-- **Mobile UI**: "Pixel Buffer" aesthetic with strict 9:16 layout.
+## Structure
 
-## Tech Stack
-- **Frontend**: Leptos (Rust)
-- **Build Tool**: Trunk
-- **Styling**: Vanilla CSS (Terminal/Dark Theme)
-- **Chain**: Base Sepolia
+- **`/app`**: The Frontend Application (Rust/Leptos WASM).
+- **`/contracts`**: The Smart Contracts (Solidity/Foundry).
+- **`/tools`**: Helper CLIs and Scripts.
 
 ## Setup
-1. Install Rust & WASM target:
-   ```bash
-   rustup target add wasm32-unknown-unknown
-   ```
-2. Install Trunk:
-   ```bash
-   cargo install --locked trunk
-   ```
-3. Run locally:
-   ```bash
-   cd app
-   trunk serve --open
-   ```
 
-## Security
-- Private keys are stored in `localStorage` inside the browser.
-- **Never** use this with real funds on Mainnet without a full audit.
-- Demo faucet keys are loaded via `.env` (not committed).
+### Prerequisites
+- Rust (Cargo)
+- Foundry (Forge/Cast)
+- Node.js (for Vercel/Trunk tools)
+
+### Environment Variables
+You must set up `.env` files in the respective directories.
+- **App**: `app/.env` (Requires `FAUCET_KEY`).
+- **Contracts**: `contracts/.env` (Requires `PRIVATE_KEY` for deployment).
+
+## Usage
+### Run App
+```bash
+cd app
+trunk serve --open
+```
+
+### Deploy Contracts
+```bash
+cd contracts
+forge script script/Deploy.s.sol --broadcast --rpc-url <YOUR_RPC>
+```

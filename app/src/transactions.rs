@@ -54,6 +54,47 @@ pub async fn send_with_feedback(
     tx.nonce = Some(U256::from(nonce));
     tx.chain_id = Some(ethers_core::types::U64::from(84532)); // Hardcoded Base Sepolia
 
+    // Set Gas Price if not set (Fix "Transaction Underpriced")
+    if tx.gas_price.is_none() {
+        feedback.set("Fetching Gas Price...");
+        match crate::rpc::get_gas_price(Network::BaseSepolia).await {
+            Ok(gp) => {
+                // Add 20% buffer to ensure inclusion
+                let effective = gp + (gp / 5);
+                tx.gas_price = Some(U256::from(effective));
+            },
+            Err(e) => {
+                 feedback.set(&format!("Gas Price Error: {}", e));
+                 return None;
+            }
+        }
+    }
+
+
+
+    // Estimate Gas if not set
+    if tx.gas.is_none() {
+        feedback.set("Estimating Gas...");
+        let tx_json = serde_json::to_value(&tx).unwrap_or(serde_json::json!({}));
+        match crate::rpc::estimate_gas(tx_json, Network::BaseSepolia).await {
+            Ok(est) => {
+                 // Add 20% buffer
+                 let gas_limit = est + (est / 5);
+                 tx.gas = Some(gas_limit);
+            },
+            Err(e) => {
+                feedback.set(&format!("Gas Est Error: {}", e));
+                return None; 
+            }
+        }
+
+    }
+    
+    // Actually, properly handling borrowing/mutability:
+    // We already signed at line 57. If we updated gas, that signature is invalid.
+    // Let's just re-sign if we estimated gas.
+    
+    // Sign
     let signature = match wallet.sign_transaction(&tx.clone().into()).await {
         Ok(s) => s,
         Err(e) => { feedback.set(&format!("Sign Error: {}", e)); return None; }
