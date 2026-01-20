@@ -22,7 +22,7 @@ getrandom = { version = "0.2", features = ["js"] }
 ethers-core = { version = "2.0.14" }
 ethers-signers = { version = "2.0.14" }
 js-sys = "0.3"
-web-sys = { version = "0.3", features = ["Window", "Performance", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "FileReader", "HtmlInputElement", "FileList", "File", "Element", "Document", "Event"] }
+web-sys = { version = "0.3", features = ["Window", "Performance", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "FileReader", "HtmlInputElement", "FileList", "File", "Element", "Document", "Event", "Navigator", "Clipboard"] }
 # k256 for manual key handling if needed, but ethers covers it. 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { version = "0.11", features = ["json"] }

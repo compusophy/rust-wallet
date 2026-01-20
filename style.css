@@ -47,7 +47,7 @@ body {
 .app-header {
     height: 44px;
     /* Thinner header */
-    background: #1a1c25;
+    background: #000;
     border-bottom: 1px solid #333;
     display: flex;
     align-items: center;
@@ -151,8 +151,9 @@ body {
 }
 
 .app-nav {
-    height: 60px;
-    background: #1a1c25;
+    height: 44px;
+    /* Matching Header */
+    background: #000;
     border-top: 1px solid #333;
     display: flex;
     align-items: center;
@@ -380,4 +381,13 @@ input[type="text"] {
     font-size: 0.8rem;
     border: 1px solid #0f0;
     opacity: 0.8;
+}
+
+.onboarding {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    height: 100%;
 }

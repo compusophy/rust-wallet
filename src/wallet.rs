@@ -43,6 +43,16 @@ pub fn WalletView() -> impl IntoView {
     // Wallet Menu State
     let (show_wallet_menu, set_show_wallet_menu) = create_signal(false);
     let (show_brain_menu, set_show_brain_menu) = create_signal(false);
+    
+    // Send State (Device)
+    let (show_device_send, set_show_device_send) = create_signal(false);
+    let (device_recipient, set_device_recipient) = create_signal("".to_string());
+    let (device_amount, set_device_amount) = create_signal("".to_string());
+
+    // Send State (Smart Account)
+    let (show_sa_send, set_show_sa_send) = create_signal(false);
+    let (sa_recipient, set_sa_recipient) = create_signal("".to_string());
+    let (sa_amount, set_sa_amount) = create_signal("".to_string());
 
     // Load from local storage on init
     create_effect(move |_| {
@@ -265,6 +275,129 @@ pub fn WalletView() -> impl IntoView {
          });
     };
 
+    // Send ETH (Device)
+    let send_eth_device = move |_| {
+        spawn_local(async move {
+            let to = device_recipient.get();
+            let amt_str = device_amount.get();
+            
+            if to.is_empty() || amt_str.is_empty() {
+                set_status.set("Invalid Send Inputs".to_string());
+                return;
+            }
+            
+            use std::str::FromStr;
+            use ethers_core::utils::parse_ether;
+            use ethers_core::types::{Address, TransactionRequest};
+            use ethers_signers::{LocalWallet, Signer};
+
+            let to_addr = match Address::from_str(&to) {
+                Ok(a) => a,
+                Err(_) => { set_status.set("Invalid Recipient Address".to_string()); return; }
+            };
+            
+            let val = match parse_ether(&amt_str) {
+                Ok(v) => v,
+                Err(_) => { set_status.set("Invalid Amount".to_string()); return; }
+            };
+
+            let feedback = crate::transactions::TxFeedback::new(set_status);
+            feedback.set("Sending ETH...");
+            
+            let k = keystore.get();
+            let pk = k.private_key.trim_start_matches("0x");
+            let wallet: LocalWallet = pk.parse().unwrap();
+            let wallet = wallet.with_chain_id(84532u64);
+            
+            // Construct TX (no provider needed here, send_with_feedback handles it via raw RPC)
+            let tx = TransactionRequest::new().to(to_addr).value(val);
+            
+            let lat = crate::transactions::send_with_feedback(&wallet, tx, feedback, "ETH Sent!").await;
+            
+            if lat.is_some() {
+                 set_show_device_send.set(false);
+                 set_device_recipient.set("".to_string());
+                 set_device_amount.set("".to_string());
+                 set_refresh_trigger.update(|v| *v += 1);
+            }
+        });
+    };
+
+    // Send ETH (Smart Account)
+    let send_eth_sa = move |_| {
+        spawn_local(async move {
+            let to = sa_recipient.get();
+            let amt_str = sa_amount.get();
+            
+            if to.is_empty() || amt_str.is_empty() {
+                 set_status.set("Invalid Send Inputs".to_string());
+                 return;
+            }
+
+            use std::str::FromStr;
+            use ethers_core::utils::parse_ether;
+            use ethers_core::types::Address;
+
+             let to_addr = match Address::from_str(&to) {
+                Ok(a) => a,
+                Err(_) => { set_status.set("Invalid Recipient Address".to_string()); return; }
+            };
+            
+            let val = match parse_ether(&amt_str) {
+                Ok(v) => v,
+                Err(_) => { set_status.set("Invalid Amount".to_string()); return; }
+            };
+
+            let feedback = crate::transactions::TxFeedback::new(set_status);
+            feedback.set("Preparing UserOp (Send ETH)...");
+
+             let k = keystore.get();
+             if let Some(tba_addr) = k.smart_account {
+                  let tba: Address = tba_addr.parse().unwrap();
+                  
+                  // ERC-6551 V3 execute(to, value, data, operation)
+                  // Function Selector: execute(address,uint256,bytes,uint8) => 0 or specifically 
+                  let data = ethers_core::types::Bytes::from(vec![]);
+                  let operation = 0u8; // Call
+
+                   use ethers_core::abi::{encode, Token};
+                   let func_selector = ethers_core::utils::id("execute(address,uint256,bytes,uint8)");
+                   let mut calldata = func_selector[0..4].to_vec();
+                   let args = encode(&[
+                       Token::Address(to_addr),
+                       Token::Uint(val),
+                       Token::Bytes(data.to_vec()),
+                       Token::Uint(operation.into())
+                   ]);
+                   calldata.extend(args);
+
+                   // Create wallet
+                   use ethers_signers::{LocalWallet, Signer};
+                   use ethers_core::types::TransactionRequest;
+                   
+                   let pk = k.private_key.trim_start_matches("0x");
+                   let wallet: LocalWallet = pk.parse().unwrap();
+                   let wallet = wallet.with_chain_id(84532u64);
+
+                   // Send transaction to TBA from signer
+                   let _ = crate::transactions::send_with_feedback(
+                       &wallet,
+                       TransactionRequest::new().to(tba).data(calldata).value(0), // 0 value to TBA, TBA sends value to dest
+                       feedback,
+                       "Sent ETH via TBA!"
+                   ).await;
+                   
+                   set_refresh_trigger.update(|v| *v += 1);
+                   set_show_sa_send.set(false);
+                   set_sa_recipient.set("".to_string());
+                   set_sa_amount.set("".to_string());
+
+             } else {
+                 set_status.set("No Smart Account".to_string());
+             }
+        });
+    };
+
     let clear_wallet = move |_| {
         let k = keystore.get();
         if k.private_key.is_empty() { return; }
@@ -353,6 +486,14 @@ pub fn WalletView() -> impl IntoView {
             set_status.set("Wallet Cleared".to_string());
         });
     };
+
+    fn copy_to_clipboard(text: String) {
+        if let Some(window) = web_sys::window() {
+             let navigator = window.navigator();
+             let clipboard = navigator.clipboard();
+             let _ = clipboard.write_text(&text);
+        }
+    }
 
     let request_sponsor = move |_| {
         let pin = pin_input.get();
@@ -607,7 +748,14 @@ pub fn WalletView() -> impl IntoView {
                              {move || if !keystore.get().address.is_empty() {
                                 view! {
                                     <div class="wallet-info" style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed #444;">
-                                        <p class="tiny-text" style="font-family:monospace; word-break:break-all;">{keystore.get().address}</p>
+                                        <div class="flex-row" style="justify-content:center; align-items:center; gap:5px;">
+                                            <p class="tiny-text" style="font-family:monospace; word-break:break-all; margin:0;">{keystore.get().address}</p>
+                                            <button class="wallet-btn" style="width:20px; height:20px; padding:0; min-width:20px; border:none;" title="Copy" on:click=move |_| copy_to_clipboard(keystore.get().address)>
+                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:12px; height:12px;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
                                         <div class="balance-grid">
                                             <div class="bal-item">
                                                 <span class="label">"Sepolia"</span>
@@ -619,6 +767,33 @@ pub fn WalletView() -> impl IntoView {
                              } else {
                                 view! { <p>"No Wallet Created"</p> }.into_view()
                              }}
+                            
+                            // Send ETH Button (Toggle)
+                            {move || if !show_device_send.get() && !keystore.get().address.is_empty() {
+                                view! { <button class="primary-btn" on:click=move |_| set_show_device_send.set(true)>"Send ETH"</button> }.into_view()
+                            } else if show_device_send.get() {
+                                view! {
+                                    <div class="sponsor-box">
+                                        <p>"Send ETH"</p>
+                                        <input type="text" placeholder="Recipient (0x...)" 
+                                            on:input=move |ev| set_device_recipient.set(event_target_value(&ev))
+                                            prop:value=device_recipient
+                                            style="margin-bottom:5px;" />
+                                        <input type="text" placeholder="Amount (ETH)" 
+                                            on:input=move |ev| set_device_amount.set(event_target_value(&ev)) 
+                                            prop:value=device_amount
+                                            style="margin-bottom:5px;" />
+                                        <div class="flex-row">
+                                            <button class="primary-btn" on:click=send_eth_device>"Send"</button>
+                                            <button class="cancel-btn" on:click=move |_| set_show_device_send.set(false)>"Cancel"</button>
+                                        </div>
+                                    </div>
+                                }.into_view()
+                            } else {
+                                view! { }.into_view()
+                            }}
+
+                            <hr style="border-color:#333; width:100%"/>
                             
                             // Sponsor
                             {move || if show_sponsor_modal.get() {
@@ -671,18 +846,25 @@ pub fn WalletView() -> impl IntoView {
                 view! { }.into_view()
             }}
             
-             // Brain Action Modal
+                             // Brain Action Modal
             {move || if show_brain_menu.get() {
                 view! {
                     <div class="modal-overlay" on:click=move |_| set_show_brain_menu.set(false)>
                         <div class="modal-content" on:click=move |ev| ev.stop_propagation()>
                             <h3 class="modal-title">"Smart Account"</h3>
                             
-                             {move || if let Some(sa) = &keystore.get().smart_account {
+                             {move || if let Some(sa) = keystore.get().smart_account {
                                 view! {
                                     <div class="smart-account-info" style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed #444;">
                                         <p class="success-text" style="text-align:center">"Active"</p>
-                                        <p style="font-size:10px; font-family:monospace; word-break:break-all;">{sa}</p>
+                                        <div class="flex-row" style="justify-content:center; align-items:center; gap:5px;">
+                                            <p style="font-size:10px; font-family:monospace; word-break:break-all; margin:0;">{sa.clone()}</p>
+                                            <button class="wallet-btn" style="width:20px; height:20px; padding:0; min-width:20px; border:none;" title="Copy" on:click=move |_| copy_to_clipboard(sa.clone())>
+                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:12px; height:12px;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
                                          <div class="balance-grid">
                                             <div class="bal-item">
                                                 <span class="label">"Sepolia"</span>
@@ -690,7 +872,31 @@ pub fn WalletView() -> impl IntoView {
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="flex-col" style="gap:10px;">
+                                    
+                                    // Send ETH (Smart Account)
+                                     {move || if !show_sa_send.get() {
+                                        view! { <button class="primary-btn" style="width:100%" on:click=move |_| set_show_sa_send.set(true)>"Send ETH"</button> }.into_view()
+                                    } else {
+                                        view! {
+                                            <div class="sponsor-box">
+                                                <p>"Send ETH (via TBA)"</p>
+                                                <input type="text" placeholder="Recipient (0x...)" 
+                                                    on:input=move |ev| set_sa_recipient.set(event_target_value(&ev))
+                                                    prop:value=sa_recipient
+                                                    style="margin-bottom:5px;" />
+                                                <input type="text" placeholder="Amount (ETH)" 
+                                                    on:input=move |ev| set_sa_amount.set(event_target_value(&ev)) 
+                                                    prop:value=sa_amount
+                                                    style="margin-bottom:5px;" />
+                                                <div class="flex-row">
+                                                    <button class="primary-btn" on:click=send_eth_sa>"Send"</button>
+                                                    <button class="cancel-btn" on:click=move |_| set_show_sa_send.set(false)>"Cancel"</button>
+                                                </div>
+                                            </div>
+                                        }.into_view()
+                                    }}
+                                    
+                                    <div class="flex-col" style="gap:10px; margin-top:10px;">
                                         <button class="sponsor-btn" on:click=request_tba_sponsor>"Request Sponsor (TBA)"</button>
                                         <button class="primary-btn" on:click=sweep_tba_funds>"Sweep TBA -> Deployer"</button>
                                     </div>
@@ -721,12 +927,9 @@ pub fn WalletView() -> impl IntoView {
                 {move || if keystore.get().address.is_empty() {
                      view! { 
                         <div class="onboarding">
-                            <h3>"Welcome"</h3>
-                            <button on:click=generate_wallet>"Create New Wallet"</button> 
-                             <div style="margin-top: 10px; border-top: 1px dashed #444; padding-top: 10px;">
-                                <button class="cancel-btn" on:click=import_opt_click>"Import Backup JSON"</button>
-                                <input type="file" node_ref=import_input_ref style="display:none" on:change=on_file_change accept=".json" />
-                            </div>
+                            <button class="primary-btn" on:click=generate_wallet>"Create New Wallet"</button> 
+                            <button class="text-btn" on:click=import_opt_click>"Import Backup JSON"</button>
+                            <input type="file" node_ref=import_input_ref style="display:none" on:change=on_file_change accept=".json" />
                         </div>
                     }.into_view()
                 } else {

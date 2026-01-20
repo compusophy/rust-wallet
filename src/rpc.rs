@@ -5,14 +5,14 @@ use serde_json::json;
 
 pub enum Network {
     BaseSepolia,
-    BaseMainnet,
+
 }
 
 impl Network {
     pub fn rpc_url(&self) -> &'static str {
         match self {
             Network::BaseSepolia => "https://sepolia.base.org",
-            Network::BaseMainnet => "https://mainnet.base.org",
+
         }
     }
 }
@@ -82,8 +82,4 @@ pub async fn get_transaction_receipt(tx_hash: &str, network: Network) -> Result<
     Ok(val["result"].clone())
 }
 
-pub async fn get_logs_filter(filter: serde_json::Value, network: Network) -> Result<Vec<serde_json::Value>, String> {
-    let params = json!([filter]);
-    let val = eth_call(network, "eth_getLogs", params).await?;
-    Ok(val["result"].as_array().ok_or("No logs result")?.clone())
-}
+
