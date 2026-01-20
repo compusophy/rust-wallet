@@ -1,0 +1,383 @@
+/* Terminal/Pixel Buffer Aesthetic */
+
+:root {
+    --bg-color: #0f111a;
+    --container-bg: #1a1c25;
+    --text-primary: #e0e0e0;
+    --text-secondary: #94a3b8;
+    --accent-color: #3b82f6;
+    /* Blue */
+    --accent-hover: #2563eb;
+    --success-color: #10b981;
+    /* Green */
+    --danger-color: #ef4444;
+    /* Red */
+    --font-mono: 'Courier New', Courier, monospace;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #0d0e12;
+    color: #e0e0e0;
+    font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
+    /* Prevent body scroll, container scrolls if needed */
+}
+
+/* Central "Pixel Buffer" Container (9:16 Mobile Ratio) */
+.wallet-container {
+    width: 400px;
+    height: 710px;
+    background: #12141d;
+    border: 2px solid #333;
+    /* border-radius removed */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    margin: 10px auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    height: 44px;
+    /* Thinner header */
+    background: #1a1c25;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 0 15px;
+    /* Left padding for text, right side controlled by button */
+    flex-shrink: 0;
+}
+
+.header-status {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.1;
+}
+
+.wallet-btn {
+    background: none;
+    border: none;
+    /* border-left: 1px solid #333; Moved to generic rule */
+    color: #e0e0e0;
+    cursor: pointer;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    /* Force rigid width */
+    padding: 10px;
+    /* Internal padding for icon */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    /* Include border in 44px */
+}
+
+.wallet-btn:hover {
+    background: #2a2d3d;
+}
+
+/* Container for the right-side icons */
+.header-icons {
+    display: flex;
+    height: 100%;
+    align-items: center;
+}
+
+/* Add separator line between icons or before the group */
+.header-icons .wallet-btn {
+    border-left: 1px solid #333;
+}
+
+.wallet-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* Modal Styling */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: #1a1c25;
+    border: 1px solid #444;
+    padding: 20px;
+    width: 80%;
+    /* border-radius removed */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-title {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    text-align: center;
+    color: #fff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+}
+
+
+.app-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    padding: 10px;
+    /* Thinner margins */
+    /* Scrollbar Styling for inner content */
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1a1c25;
+}
+
+.app-nav {
+    height: 60px;
+    background: #1a1c25;
+    border-top: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-shrink: 0;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.nav-item:hover,
+.nav-item.active {
+    color: #4CAF50;
+    text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+/* Redundant scrollbar styling removed from container */
+.wallet-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wallet-container::-webkit-scrollbar-track {
+    background: #1a1c25;
+}
+
+.wallet-container::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 4px;
+}
+
+/* Header */
+.wallet-container h1 {
+    text-align: center;
+    margin-top: 0;
+    font-size: 1.4rem;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5rem;
+}
+
+/* Status Bar */
+.status {
+    text-align: center;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    min-height: 1.2rem;
+}
+
+/* Sections */
+.keystore,
+.diamond-section {
+    background: #232632;
+    padding: 1rem;
+    border: 1px solid #333;
+    margin-bottom: 1rem;
+}
+
+h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    border-bottom: 1px dashed #444;
+    padding-bottom: 5px;
+}
+
+p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.tiny-text {
+    font-size: 0.75rem;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+}
+
+/* Stats / Balances */
+.balance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.bal-item {
+    background: #0f111a;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #333;
+}
+
+.bal-item .label {
+    display: block;
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.bal-item .val {
+    display: block;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-top: 4px;
+}
+
+/* Controls */
+.controls,
+.controls-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.flex-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Buttons (Blocky/Retro) */
+button {
+    cursor: pointer;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    border: none;
+    /* border-radius removed */
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: #444;
+    border-color: #777;
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+.primary-btn {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.danger-btn {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: white;
+}
+
+.danger-btn-outline {
+    background: transparent;
+    border: 1px solid var(--danger-color);
+    color: var(--danger-color);
+}
+
+.danger-btn-outline:hover {
+    background: var(--danger-color);
+    color: white;
+}
+
+.sponsor-btn {
+    background-color: #8b5cf6;
+    /* Violet */
+    border-color: #8b5cf6;
+    color: white;
+}
+
+.sponsor-btn:hover {
+    background-color: #7c3aed;
+}
+
+/* Inputs */
+input[type="password"],
+input[type="text"] {
+    background: #0f111a;
+    border: 1px solid #555;
+    color: var(--text-primary);
+    padding: 8px;
+    font-family: var(--font-mono);
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+/* Modals / Boxes */
+.sponsor-box,
+.warning-box {
+    background: #0f111a;
+    border: 1px dashed #555;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.success-text {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+/* Latency Display */
+.latency-meter {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: #000;
+    color: #0f0;
+    /* Terminal Green */
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border: 1px solid #0f0;
+    opacity: 0.8;
+}

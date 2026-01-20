@@ -1,0 +1,29 @@
+[package]
+name = "diamond-wallet-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+leptos = { version = "0.6", features = ["csr"] }
+leptos_meta = { version = "0.6", features = ["csr"] }
+leptos_router = { version = "0.6", features = ["csr"] }
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+gloo-storage = "0.3"
+gloo-net = "0.5"
+gloo-timers = { version = "0.3", features = ["futures"] }
+hex = "0.4"
+alloy-primitives = { version = "0.7", features = ["serde"] } 
+rand = { version = "0.8", features = ["small_rng"] }
+getrandom = { version = "0.2", features = ["js"] }
+# Use ethers-core/signers for WASM-compatible signing logic
+ethers-core = { version = "2.0.14" }
+ethers-signers = { version = "2.0.14" }
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["Window", "Performance", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "FileReader", "HtmlInputElement", "FileList", "File", "Element", "Document", "Event"] }
+# k256 for manual key handling if needed, but ethers covers it. 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] } 
